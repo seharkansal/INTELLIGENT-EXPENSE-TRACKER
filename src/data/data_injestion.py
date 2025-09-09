@@ -66,7 +66,7 @@ def save_data(train_data: pd.DataFrame, test_data: pd.DataFrame, data_path: str)
         raw_data_path = os.path.join(data_path, 'raw')
         os.makedirs(raw_data_path, exist_ok=True)
         train_data.to_csv(os.path.join(raw_data_path, "first_batch_train.csv"), index=False)
-        test_data.to_csv(os.path.join(raw_data_path, "first_bacth_test.csv"), index=False)
+        test_data.to_csv(os.path.join(raw_data_path, "first_batch_test.csv"), index=False)
         logging.debug('Train and test data saved to %s', raw_data_path)
     except Exception as e:
         logging.error('Unexpected error occurred while saving the data: %s', e)
@@ -74,7 +74,7 @@ def save_data(train_data: pd.DataFrame, test_data: pd.DataFrame, data_path: str)
 
 def main():
     try:
-        df = load_data(data_url='data/raw/cibc_data.csv')
+        df = load_data(data_url='data/external/cibc_data.csv')
         # s3 = s3_connection.s3_operations("bucket-name", "accesskey", "secretkey")
         # df = s3.fetch_file_from_s3("data.csv")
 
