@@ -85,7 +85,13 @@ def preprocess_dataframe(df):
     # Check results
     # print(df_new.head())
 
-    new_df = df_new.drop("merchant_clean", axis=1)
+    new_df = df_new.drop("merchant", axis=1)
+
+    # Specify the new order of columns
+    new_order = ["date", "merchant_clean", "amount", "category"]
+
+    # Reorder the DataFrame
+    new_df = new_df[new_order]
 
     # df.to_csv("/home/sehar/INTELLIGENT-EXPENSE-TRACKER/data/raw/final_batch.csv",index=False)
     # df_new.to_csv("/home/sehar/INTELLIGENT-EXPENSE-TRACKER/data/raw/fouth_batch.csv",index=False)
@@ -101,8 +107,8 @@ def main():
         logging.info('data loaded properly')
 
         # Transform the data
-        train_processed_data = preprocess_dataframe(train_data)
-        test_processed_data = preprocess_dataframe(test_data)
+        train_processed_data= preprocess_dataframe(train_data)
+        test_processed_data= preprocess_dataframe(test_data)
 
         # Store the data inside data/processed
         data_path = os.path.join("./data", "interim")
