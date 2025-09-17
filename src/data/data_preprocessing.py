@@ -11,7 +11,7 @@ def preprocess_dataframe(df):
     # df = pd.read_csv("/home/sehar/INTELLIGENT-EXPENSE-TRACKER/data/raw/second_batch.csv")
 
     # Make a fresh copy of relevant columns
-    df_new = df[["date", "merchant", "amount"]].copy()
+    # df_new = df[["date", "merchant", "amount"]].copy()
 
     def clean_merchant(text):
         text = text.upper()
@@ -25,7 +25,7 @@ def preprocess_dataframe(df):
     # df_clean = df_clean.copy()  # now it's a true independent DataFrame
 
     # Now apply your cleaning safely
-    df_new["merchant_clean"] = df_new["merchant"].apply(clean_merchant)
+    df["merchant_clean"] = df["merchant"].apply(clean_merchant)
 
     # Define a mapping of keywords → categories
     category_rules = {
@@ -80,12 +80,12 @@ def preprocess_dataframe(df):
         return "Other"  # default category
 
     # Apply mapping
-    df_new["category"] = df_new["merchant_clean"].apply(categorize_merchant)
+    df["category"] = df["merchant_clean"].apply(categorize_merchant)
 
     # Check results
     # print(df_new.head())
 
-    new_df = df_new.drop("merchant", axis=1)
+    new_df = df.drop("merchant", axis=1)
 
     # Specify the new order of columns
     new_order = ["date", "merchant_clean", "amount", "category"]
@@ -102,20 +102,21 @@ def preprocess_dataframe(df):
 def main():
     try:
         # Fetch the data from data/raw
-        train_data = pd.read_csv('./data/raw/first_batch_train.csv')
-        test_data = pd.read_csv('./data/raw/first_batch_test.csv')
+        train_data = pd.read_csv('./data/raw/first_batch.csv')
+        # test_data = pd.read_csv('./data/raw/first_batch_test.csv')
         logging.info('data loaded properly')
 
         # Transform the data
         train_processed_data= preprocess_dataframe(train_data)
-        test_processed_data= preprocess_dataframe(test_data)
+        train_processed_data = train_processed_data.sort_values(by="date").reset_index(drop=True)
+        # test_processed_data= preprocess_dataframe(test_data)
 
         # Store the data inside data/processed
         data_path = os.path.join("./data", "interim")
         os.makedirs(data_path, exist_ok=True)
         
-        train_processed_data.to_csv(os.path.join(data_path, "train_processed.csv"), index=False)
-        test_processed_data.to_csv(os.path.join(data_path, "test_processed.csv"), index=False)
+        train_processed_data.to_csv(os.path.join(data_path, "processed_data.csv"), index=False)
+        # test_processed_data.to_csv(os.path.join(data_path, "test_processed.csv"), index=False)
         
         logging.info('Processed data saved to %s', data_path)
     except Exception as e:

@@ -60,14 +60,14 @@ def preprocess_data(df: pd.DataFrame) -> pd.DataFrame:
         logging.error('Unexpected error during preprocessing: %s', e)
         raise
 
-def save_data(train_data: pd.DataFrame, test_data: pd.DataFrame, data_path: str) -> None:
+def save_data(train_data: pd.DataFrame, data_path: str) -> None:
     """Save the train and test datasets."""
     try:
         raw_data_path = os.path.join(data_path, 'raw')
         os.makedirs(raw_data_path, exist_ok=True)
-        train_data.to_csv(os.path.join(raw_data_path, "first_batch_train.csv"), index=False)
-        test_data.to_csv(os.path.join(raw_data_path, "first_batch_test.csv"), index=False)
-        logging.debug('Train and test data saved to %s', raw_data_path)
+        train_data.to_csv(os.path.join(raw_data_path, "first_batch.csv"), index=False)
+        # test_data.to_csv(os.path.join(raw_data_path, "first_batch_test.csv"), index=False)
+        logging.debug('data saved to %s', raw_data_path)
     except Exception as e:
         logging.error('Unexpected error occurred while saving the data: %s', e)
         raise
@@ -79,8 +79,8 @@ def main():
         # df = s3.fetch_file_from_s3("data.csv")
 
         final_df = preprocess_data(df)
-        train_data, test_data = train_test_split(final_df, test_size=0.2, random_state=42)
-        save_data(train_data, test_data, data_path='./data')
+        # train_data, test_data = train_test_split(final_df, test_size=0.2, random_state=42)
+        save_data(final_df, data_path='./data')
     except Exception as e:
         logging.error('Failed to complete the data ingestion process: %s', e)
         print(f"Error: {e}")
