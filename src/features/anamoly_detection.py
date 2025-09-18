@@ -32,9 +32,11 @@ def create_features(df):
     # # Budget utilization (positive ratio)
     df['budget_utilization'] = df['monthly_spend_category'].abs() / df['budget'].replace(0, 1)  # avoid div by 0
 
-    # # Monthly total spend
-    df['monthly_total_spend'] = df.groupby('month')['amount'].transform('sum')
-
+    df['monthly_total_spend'] = (
+        df.assign(expense_only = df['amount'].where(df['amount'] < 0, 0))
+        .groupby('month')['expense_only']
+        .transform('sum')
+)
     # # Ratio of "Other" category transactions
     df['other_ratio'] = df.groupby('month')['category'].transform(lambda x: (x=='Other').sum()/len(x))
 
@@ -104,9 +106,10 @@ def main():
     # df_new_features = create_features(df_new)
 
     # 3️⃣ Append new transactions to historical raw data
-    df_new['source'] = 'new'
+     # 3️⃣ Keep only new rows (source=='new') from email alerts
+    df_new_only = df_new[df_new['source'] == 'new'].copy()
     raw_transcation['source'] = 'historical'
-    combined_raw = pd.concat([raw_transcation, df_new]).reset_index(drop=True)
+    combined_raw = pd.concat([raw_transcation, df_new_only]).reset_index(drop=True)
 
     # combined_raw = pd.concat([raw_transcation, df_new]).reset_index(drop=True)
     combined_raw = combined_raw.drop_duplicates(subset=["date", "merchant_clean", "amount"], keep="last")
@@ -116,22 +119,23 @@ def main():
     # Sort by date ascending (oldest first)
     # # combined_raw = combined_raw.sort_values(by="date").reset_index(drop=True)
 
-    # # 4️⃣ Run feature engineering on full dataset
+    # # # 4️⃣ Run feature engineering on full dataset
     combined_features = create_features(combined_raw)
-    # combined_features.to_csv(feature_path, index=False)
+    # # combined_features.to_csv(feature_path, index=False)
 
-    # # After anomaly detection and saving
-    # combined_features.loc[combined_features['source'] == 'new', 'source'] = 'historical'
+    # # # After anomaly detection and saving
+    # # combined_features.loc[combined_features['source'] == 'new', 'source'] = 'historical'
 
-    # #5️⃣ Detect anomalies on full feature dataset
+    # # #5️⃣ Detect anomalies on full feature dataset
     anamoly_dataset = detect_anomalies(combined_features)
-    #storing historic anamolies
+    # #storing historic anamolies
     anamoly_dataset.to_csv(feature_path, index=False)
 
-    anomalies_new = combined_features[combined_features['any_anomaly']] #| (combined_features['source'] == 'new')]
+    anomalies_new = (combined_features['any_anomaly'].astype(bool)) | (combined_features['source'] == 'new')
+
     print(f"Detected {len(anomalies_new)} anomalies in new transactions.")
 
-    # Step 2: Append new anomalies to existing anomalies CSV
+    # # Step 2: Append new anomalies to existing anomalies CSV
     if new_anomalies_path.exists() and os.path.getsize(new_anomalies_path) > 0:
         try:
             existing_anomalies = pd.read_csv(new_anomalies_path)
@@ -140,20 +144,20 @@ def main():
     else:
         existing_anomalies = pd.DataFrame(columns=anomalies_new.columns)
 
-    # Combine and remove duplicates
+    # # Combine and remove duplicates
     combined_anomalies = pd.concat([existing_anomalies, anomalies_new], ignore_index=True)
     combined_anomalies = combined_anomalies.drop_duplicates(
         subset=['date', 'merchant_clean', 'amount', 'category'], keep='last'
     )
 
-    # Save updated anomalies dataset
-    combined_anomalies.to_csv(new_anomalies_path, index=False)
+    # # Save updated anomalies dataset
+    # combined_anomalies.to_csv(new_anomalies_path, index=False)
     logging.info(f"✅ Updated anomalies dataset saved with {len(combined_anomalies)} rows.")
 
-    # Step 3: Update 'source' for new transactions to historical
+    # # Step 3: Update 'source' for new transactions to historical
     combined_features.loc[combined_features['source'] == 'new', 'source'] = 'historical'
 
-    # Step 4: Save updated features dataset
+    # # Step 4: Save updated features dataset
     combined_features.to_csv(feature_path, index=False)
     logging.info(f"✅ Updated features dataset saved with {len(combined_features)} rows.")
 
