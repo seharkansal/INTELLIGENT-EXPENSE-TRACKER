@@ -1,113 +1,76 @@
 import pandas as pd
 import numpy as np
-import matplotlib.pyplot as plt
 from prophet import Prophet
-from prophet.plot import plot_plotly, plot_components_plotly
-import plotly.graph_objs as go   # 👈 Add this line
-import plotly.io as pio
-pio.renderers.default = "browser"
-# from src.features import anamoly_detection
+# from sklearn.metrics import mean_absolute_error, mean_squared_error
+import matplotlib.pyplot as plt
+import json
 
+# ------------------------------
+# 1️⃣ Create Category-Level Monthly Data
+# ------------------------------
 df = pd.read_csv("/home/sehar/INTELLIGENT-EXPENSE-TRACKER/data/external/new_transactions_features.csv")
 df['month'] = pd.to_datetime(df['month'], format='%B %Y')
-'''
-Converts the month column (currently a string like "September 2023") to a datetime object so that time series models can understand the ordering.
-'''
-#3️⃣ Aggregate Total Monthly Spend
-# Assume 'category' or 'source' can help identify credit payments
-expenses_df = df[df['amount'] < 0]  # only actual spending
-monthly_total = expenses_df.groupby('month')['amount'].sum().sort_index()
 
-monthly_total = monthly_total.asfreq('MS').fillna(method='ffill')
-
-"""
-groupby('month') → combines multiple rows for the same month into one number per month.
-.asfreq('MS') → sets the time index frequency to month start, filling any missing months.
-.fillna(method='ffill') → fills missing months with the previous month’s value to avoid gaps.
-"""
-#4️⃣ Forecast Total Monthly Spend (Prophet)
-prophet_df = monthly_total.reset_index().rename(columns={'month':'ds','amount':'y'})
-model_total = Prophet(yearly_seasonality=True, weekly_seasonality=False, daily_seasonality=False)
-model_total.fit(prophet_df)
-
-future_total = model_total.make_future_dataframe(periods=6, freq='MS')
-forecast_total = model_total.predict(future_total)
-print(prophet_df)
-# ------------------------------
-# 5️⃣ Pivot Categories to Wide Format
-# ------------------------------
 category_monthly = df.pivot_table(
-    index='month', 
-    columns='category', 
-    values='monthly_spend_category', 
-    aggfunc='max'
+    index='month',
+    columns='category',
+    values='monthly_spend_category',
+    aggfunc='max' 
 ).sort_index()
 
-category_monthly = category_monthly.asfreq('MS').fillna(0)  # fill missing months
+category_monthly = category_monthly.asfreq('MS').fillna(0)
+category_monthly.to_csv("/home/sehar/INTELLIGENT-EXPENSE-TRACKER/data/external/category_spend_monthly")
+# print(category_monthly)
 
-print(category_monthly.head())
+holidays = pd.DataFrame({
+    'holiday': 'high_spend',
+    'ds': pd.to_datetime(['2025-05-01', '2025-06-01', '2024-10-01']),  # months with spikes
+    'lower_window': 0,  # include this day
+    'upper_window': 0
+})
 
 # ------------------------------
-# 6️⃣ Forecast Each Category Separately
+# 2️⃣ Forecast Each Category
 # ------------------------------
 category_forecasts = {}
-for cat in category_monthly.columns:
-    cat_df = category_monthly[cat].reset_index().rename(columns={'month':'ds', cat:'y'})
+# metrics = {}
+
+for cat in ["Food", "Grocery", "Utility"]:
+    print(f"\nForecasting category: {cat}")
+
+    # Prepare data
+    cat_df = category_monthly[cat].reset_index().rename(columns={'month': 'ds', cat: 'y'})
+    cat_df['y_smooth'] = cat_df['y'].rolling(2, center=True).median()
     # print(cat_df.head())
-    model = Prophet(yearly_seasonality=True, weekly_seasonality=False, daily_seasonality=False)
+    
+    
+    # Prophet model
+    model = Prophet(yearly_seasonality=True, weekly_seasonality=False, daily_seasonality=False,changepoint_prior_scale=0.3,holidays=holidays)
     model.fit(cat_df)
-    future = model.make_future_dataframe(periods=6, freq='MS')
+    
+    # Forecast (extend 3 months ahead for test comparison)
+    future = model.make_future_dataframe(periods=3, freq='MS')
     forecast = model.predict(future)
+    
+    # Save forecast
     category_forecasts[cat] = forecast
+
+forecast_json = {}
+for cat, forecast in category_forecasts.items():
+    forecast_json[cat] = forecast[['ds', 'yhat', 'yhat_lower', 'yhat_upper']].tail(5).to_dict(orient="records")
+
+    # Save or pretty print
+# print(json.dumps(forecast_json, indent=4, default=str))
+# Save forecast_json to a file
+with open("/home/sehar/INTELLIGENT-EXPENSE-TRACKER/data/processed/category_forecasts.json", "w") as f:
+    json.dump(forecast_json, f, indent=4, default=str)
     # print(category_forecasts)
 
-# Total spend forecast
-plot_plotly(model_total, forecast_total).show()
-plot_components_plotly(model_total, forecast_total).show()
-
-# ------------------------------
-# 7️⃣ Visualize Total Monthly Spend
-# ------------------------------
-# plt.figure(figsize=(12,5))
-# plt.plot(monthly_total.index, monthly_total.values, label='Actual', marker='o')
-# plt.plot(forecast_total['ds'], forecast_total['yhat'], label='Forecast', linestyle='--')
-# plt.fill_between(forecast_total['ds'], forecast_total['yhat_lower'], forecast_total['yhat_upper'], color='gray', alpha=0.2)
-# plt.title('Total Monthly Spend Forecast')
-# plt.xlabel('Month')
-# plt.ylabel('Spend ($)')
-# plt.legend()
+# fig1 = model.plot(forecast)
+# plt.title(f"Forecast for {cat}")
 # plt.show()
 
-# ------------------------------
-# 8️⃣ Side-by-Side Category Visualization
-# ------------------------------
-# categories = category_monthly.columns
-# num_categories = len(categories)
-# fig, axes = plt.subplots(1, num_categories, figsize=(5*num_categories,5), sharey=True)
-
-# for i, cat in enumerate(categories):
-#     axes[i].plot(category_monthly.index, category_monthly[cat], label='Actual', marker='o')
-#     forecast = category_forecasts[cat]
-#     axes[i].plot(forecast['ds'], forecast['yhat'], label='Forecast', linestyle='--')
-#     axes[i].fill_between(forecast['ds'], forecast['yhat_lower'], forecast['yhat_upper'], color='gray', alpha=0.2)
-#     axes[i].set_title(f'{cat} Spend')
-#     axes[i].set_xlabel('Month')
-#     axes[i].set_ylabel('Spend ($)')
-#     axes[i].legend()
-
-# plt.tight_layout()
+# fig2 = model.plot_components(forecast)
+# plt.title(f"Components for {cat}")
 # plt.show()
 
-# ------------------------------
-# 9️⃣ Optional: Highlight Anomalies in Total Spend
-# ------------------------------
-# if 'spike_anomaly' in df.columns:
-#     anomalies = df[df['spike_anomaly']==True].groupby('month')['monthly_total_spend'].max()
-#     plt.figure(figsize=(12,5))
-#     plt.plot(monthly_total.index, monthly_total.values, label='Actual', marker='o')
-#     plt.scatter(anomalies.index, anomalies.values, color='red', label='Spike Anomaly', s=100)
-#     plt.title('Total Monthly Spend with Anomalies')
-#     plt.xlabel('Month')
-#     plt.ylabel('Spend ($)')
-#     plt.legend()
-#     plt.show()
