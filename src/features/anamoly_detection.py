@@ -65,21 +65,42 @@ def create_features(df):
 
     return df
 
-def detect_anomalies(df):
-    df['spike_anomaly'] = df['z_score'].abs() > 3
+def detect_anomalies(df, z_thresh=3, budget_thresh=1, other_ratio_thresh=0.3, combine_logic='any'):
+    # Spike anomaly
+    df['spike_anomaly'] = df['z_score'].abs() > z_thresh
     
-    # Budget overspend
-    df['budget_anomaly'] = df['budget_utilization'] > 1
+    # Budget anomaly
+    df['budget_anomaly'] = df['budget_utilization'] > budget_thresh
     
-    # Other category anomalies
+    # Other category anomaly
     monthly_other_ratio = df.groupby('month')['category'].transform(
         lambda x: (x=='Other').sum() / len(x))
-    df['other_anomaly'] = monthly_other_ratio > 0.3
+    df['other_anomaly'] = monthly_other_ratio > other_ratio_thresh
     
-    # Combined
-    df['any_anomaly'] = df[['spike_anomaly', 'budget_anomaly', 'other_anomaly']].any(axis=1)
+    # Combine anomalies
+    if combine_logic == 'any':
+        df['any_anomaly'] = df[['spike_anomaly','budget_anomaly','other_anomaly']].any(axis=1)
+    elif combine_logic == 'majority':
+        df['any_anomaly'] = df[['spike_anomaly','budget_anomaly','other_anomaly']].sum(axis=1) >= 2
+    else:
+        raise ValueError("combine_logic must be 'any' or 'majority'")
     
     return df
+
+def evaluate_metrics(df, ground_truth_col='any_anomaly'):
+    predicted = df['any_anomaly']
+    ground_truth = df[ground_truth_col]
+
+    TP = ((predicted==True) & (ground_truth==True)).sum()
+    FP = ((predicted==True) & (ground_truth==False)).sum()
+    FN = ((predicted==False) & (ground_truth==True)).sum()
+    TN = ((predicted==False) & (ground_truth==False)).sum()
+
+    precision = TP / (TP + FP) if (TP + FP) else 0
+    recall = TP / (TP + FN) if (TP + FN) else 0
+    f1 = 2 * (precision * recall) / (precision + recall) if (precision + recall) else 0
+
+    return {'TP': TP, 'FP': FP, 'FN': FN, 'TN': TN, 'Precision': precision, 'Recall': recall, 'F1': f1}
 
 # # Paths
 feature_path = Path("/home/sehar/INTELLIGENT-EXPENSE-TRACKER/data/external/new_transactions_features.csv")
@@ -155,13 +176,37 @@ def main():
     logging.info(f"✅ Updated anomalies dataset saved with {len(combined_anomalies)} rows.")
 
     # # Step 3: Update 'source' for new transactions to historical
-    combined_features.loc[combined_features['source'] == 'new', 'source'] = 'historical'
+    # combined_features.loc[combined_features['source'] == 'new', 'source'] = 'historical'
 
     # # Step 4: Save updated features dataset
     combined_features.to_csv(feature_path, index=False)
     logging.info(f"✅ Updated features dataset saved with {len(combined_features)} rows.")
 
     print("Anomalies processing complete.")
+
+    # Set your labeled anomalies as ground truth
+    df = pd.read_csv(feature_path, parse_dates=['date'])
+    print(df.head())
+    df['ground_truth'] = df['any_anomaly']
+
+    # Try different thresholds
+    z_scores = [2.5, 3, 3.5]
+    budget_thresholds = [1, 1.1]
+    other_ratios = [0.2, 0.3, 0.4]
+
+    results = []
+
+    for z in z_scores:
+        for b in budget_thresholds:
+            for o in other_ratios:
+                temp_df = detect_anomalies(df.copy(), z_thresh=z, budget_thresh=b, other_ratio_thresh=o, combine_logic='any')
+                metrics = evaluate_metrics(temp_df, ground_truth_col='ground_truth')
+                metrics.update({'z_thresh': z, 'budget_thresh': b, 'other_ratio_thresh': o})
+                results.append(metrics)
+
+    # Convert results to DataFrame for easy comparison
+    results_df = pd.DataFrame(results)
+    # print(results_df.sort_values(by='F1', ascending=False))
 
 if __name__ == "__main__":
     main()

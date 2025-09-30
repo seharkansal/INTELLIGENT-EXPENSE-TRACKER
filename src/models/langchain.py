@@ -1,37 +1,28 @@
-import pandas as pd
 import json
+from pathlib import Path
+from dotenv import load_dotenv
+from pydantic import BaseModel, Field
+from langchain.vectorstores import FAISS
+from langchain.embeddings.openai import OpenAIEmbeddings
 from langchain.chat_models import ChatOpenAI
-from langchain.chains import LLMChain
 from langchain.prompts import PromptTemplate
-# Load primary transaction-level dataset
+from langchain.output_parsers import PydanticOutputParser
+from langchain.schema.runnable import RunnablePassthrough
+from langchain.document_loaders import JSONLoader
 from dotenv import load_dotenv
 
 load_dotenv()
-primary_df = pd.read_csv("/home/sehar/INTELLIGENT-EXPENSE-TRACKER/data/external/new_transactions_features.csv", parse_dates=["date"])
-transactions_json = primary_df.to_dict(orient="records")
-with open("/home/sehar/INTELLIGENT-EXPENSE-TRACKER/data/processed/transaction_level.json", "w") as f:
-    json.dump(transactions_json, f, indent=4, default=str)
-
-# print(primary_df.head())
-
+# primary_df = pd.read_csv("/home/sehar/INTELLIGENT-EXPENSE-TRACKER/data/external/new_transactions_features.csv")
+# transactions_json = primary_df.to_dict(orient="records")
+# with open("/home/sehar/INTELLIGENT-EXPENSE-TRACKER/data/processed/transaction_level.json", "w") as f:
+#     json.dump(transactions_json, f, indent=4, default=str)
 """
-4️⃣ Format Data for LangChain
-a) Transaction-level JSON
-"""
-
 # Load forecast data
 with open("/home/sehar/INTELLIGENT-EXPENSE-TRACKER/data/processed/category_forecasts.json", "r") as f:
     forecast_json = json.load(f)
 
 # print(forecast_json.keys())  # -> dict_keys(['Food', 'Grocery', 'Utility'])
 
-# print(json.dumps(transactions_json[:5], indent=4, default=str))
-
-#5️⃣ Call LangChain to Generate Insights / Alerts / Recommendations
-langchain_context = {
-    "transactions": transactions_json,
-    # "forecasts": forecast_json
-}
 # 3️⃣ Generate automated alerts
 # -------------------------------
 # alerts = []
@@ -48,71 +39,64 @@ langchain_context = {
     
 #     if row["other_anomaly"]:
 #         alerts.append(f"Other anomaly in {category} on {row['date'].strftime('%Y-%m-%d')}")
+"""
+CHUNK_DIR = Path("monthly_chunks")
+SUMMARY_DIR = Path("summaries")
+SUMMARY_DIR.mkdir(exist_ok=True)
 
-llm = ChatOpenAI(model_name="gpt-3.5-turbo", temperature=0.2)
+def build_vector_store():
+    chunk_texts = []
+    month_refs = []
+    for month_file in CHUNK_DIR.iterdir():
+        with open(month_file, "r") as f:
+            data = json.load(f)
+        chunk_texts.append(str(data))
+        month_refs.append(month_file.stem)
 
-# Example prompt
+    embeddings = OpenAIEmbeddings(model="text-embedding-3-small")
+    vector_store = FAISS.from_texts(chunk_texts, embeddings, metadatas=[{"month": m} for m in month_refs])
+    return vector_store
+
+# Step 1: build or update vector store for retrieval
+vector_store = build_vector_store()
+
 prompt = PromptTemplate(
     input_variables=["data_json"],
     template="""
-You are a financial assistant. Use the following JSON dataset of transactions and forecasts:
+You are a financial analyst.
 
+Analyze the transactions from the JSON data below:
 {data_json}
 
-Generate:
-1. Monthly summary
-2. Category-level insights
-3. Alerts for anomalies
-4. Recommendations to adjust budgets
+Format like this:
+<Category Name>
+Monthly spend: $X vs budget $Y → Z% overspend/underspend (state if budget anomaly).
+Flagged transactions: list any anomalies with merchant name and reason.
+Rolling average spend: $A (std B) → explain if current spend is within/outside normal range.
 
-Respond in concise, readable English.
+Repeat for each category.
+
+Overall summary:
+- Total spend: $TOTAL
+- Categories exceeding budget: list them with % over
+- Recommendations: actionable advice in 1–2 sentences
+
+Provide your response in clear structured points.
 """
 )
 
-"""
-You are a financial assistant. You are given a dataset of transaction records with the following columns:
-date, merchant_clean, amount, category, source, month, cumulative_category_spend, monthly_spend_category,
-budget, budget_utilization, monthly_total_spend, other_ratio, rolling_mean, rolling_std,
-z_score, spike_anomaly, budget_anomaly, other_anomaly, any_anomaly
-
-You are also given monthly category-level trends.
-
-Tasks:
-1. Summarize anomalies (spike, budget, other).
-2. Generate insights based on cumulative spend, budget utilization, rolling metrics.
-3. Recommend adjustments or warnings per category.
-4. Identify unusual trends or overspending.
-5. Provide a short summary of the current month's financial health.
-
-Here is the data:
-{data}
-
-Provide your response in clear structured points.
-
-"""
-
-"""
-You are a financial assistant. You are given:
-1. Transaction-level data with cumulative spend, anomalies, budgets, rolling metrics.
-2. Monthly category-level trends.
-3. Automated alerts based on anomalies and budget utilization.
-
-Your tasks:
-1. Summarize anomalies for each category.
-2. Provide actionable recommendations for overspending or underspending categories.
-3. Highlight trends and forecast context from monthly category trends.
-4. Suggest optimal budget adjustments and preventive measures.
-5. Present a concise summary of the financial health of the month.
-
-Here is the dataset:
-{data}
-
-Alerts:
-{alerts}
-
-Respond in a structured format per category.
-"""
-
+llm = ChatOpenAI(model_name="gpt-3.5-turbo", temperature=0.2)
 chain = LLMChain(llm=llm, prompt=prompt)
-response = chain.run(data_json=langchain_context)
-print(response)
+# Step 2: retrieval & LLM analysis (example)
+# 8️⃣ Function to retrieve relevant chunks and run LLM
+def analyze_month(month_str):
+    # Retrieve chunks for that month
+    results = vector_store.similarity_search(month_str, k=1)  # adjust k if multiple chunks
+    data_json = results[0].page_content
+    # Run LLM
+    return chain.run(data_json=data_json)
+
+# 9️⃣ Example usage
+month_to_analyze = "2023-10"
+response = analyze_month(month_to_analyze)
+print(f"Analysis for {month_to_analyze}:\n", response)
