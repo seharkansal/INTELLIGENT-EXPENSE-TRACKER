@@ -1,0 +1,60 @@
+{
+    "month": "October 2023",
+    "total_spend": -523.63,
+    "categories": [
+        {
+            "category": "Food",
+            "monthly_spend": -138.1,
+            "budget": 120.0,
+            "overspend_percent": 15.08,
+            "anomalies": [
+                "budget_anomaly"
+            ],
+            "rolling_mean": -9.89,
+            "rolling_std": 6.85
+        },
+        {
+            "category": "Other",
+            "monthly_spend": -1.24,
+            "budget": 100.0,
+            "overspend_percent": 1.24,
+            "anomalies": [],
+            "rolling_mean": -8.32,
+            "rolling_std": 46.64
+        },
+        {
+            "category": "Grocery",
+            "monthly_spend": -236.09,
+            "budget": 110.0,
+            "overspend_percent": 115.54,
+            "anomalies": [
+                "budget_anomaly"
+            ],
+            "rolling_mean": -16.61,
+            "rolling_std": 24.17
+        },
+        {
+            "category": "Shopping",
+            "monthly_spend": -60.06,
+            "budget": 0.0,
+            "overspend_percent": 100.0,
+            "anomalies": [
+                "budget_anomaly"
+            ],
+            "rolling_mean": -14.33,
+            "rolling_std": 9.82
+        },
+        {
+            "category": "Utility",
+            "monthly_spend": -44.07,
+            "budget": 39.0,
+            "overspend_percent": 13.01,
+            "anomalies": [
+                "budget_anomaly"
+            ],
+            "rolling_mean": -44.07,
+            "rolling_std": 0.0
+        }
+    ],
+    "recommendations": "Review budget allocations for Food, Grocery, Shopping, and Utility categories to avoid overspending."
+}
