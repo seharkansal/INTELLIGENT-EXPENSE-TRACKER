@@ -4,6 +4,7 @@ import datetime
 from src.logger import logging
 import pandas as pd
 from pathlib import Path
+import matplotlib.pyplot as plt
 import os
 
 def create_features(df):
@@ -102,6 +103,35 @@ def evaluate_metrics(df, ground_truth_col='any_anomaly'):
 
     return {'TP': TP, 'FP': FP, 'FN': FN, 'TN': TN, 'Precision': precision, 'Recall': recall, 'F1': f1}
 
+# --- Visualization function ---
+def visualize_anomalies(df):
+    # Time-series plot
+    plt.figure(figsize=(12,6))
+    plt.plot(df['date'], df['amount'], label='Amount', color='blue')
+    plt.scatter(df[df['any_anomaly']==True]['date'], 
+                df[df['any_anomaly']==True]['amount'], 
+                color='red', label='Anomaly')
+    plt.xlabel("Date")
+    plt.ylabel("Transaction Amount")
+    plt.title("Transaction Anomalies Over Time")
+    plt.legend()
+    plt.savefig("/home/sehar/INTELLIGENT-EXPENSE-TRACKER/reports/anomalies_plot.png")
+    plt.close()
+
+    # Monthly anomaly summary
+    df['month'] = df['date'].dt.to_period('M')
+    monthly_summary = df.groupby('month').agg(
+        total_transactions=('amount','count'),
+        anomalies=('any_anomaly','sum')
+    )
+    monthly_summary['normal'] = monthly_summary['total_transactions'] - monthly_summary['anomalies']
+
+    monthly_summary[['anomalies','normal']].plot(kind='bar', stacked=True, figsize=(12,6))
+    plt.title("Monthly Anomaly Counts")
+    plt.ylabel("Number of Transactions")
+    plt.savefig("/home/sehar/INTELLIGENT-EXPENSE-TRACKER/reports/number_of_anomalies_plot.png")
+    plt.close()
+
 # # Paths
 feature_path = Path("/home/sehar/INTELLIGENT-EXPENSE-TRACKER/data/external/new_transactions_features.csv")
 raw_path=Path("/home/sehar/INTELLIGENT-EXPENSE-TRACKER/data/interim/processed_data.csv")
@@ -109,7 +139,7 @@ raw_path=Path("/home/sehar/INTELLIGENT-EXPENSE-TRACKER/data/interim/processed_da
 new_anomalies_path = Path("/home/sehar/INTELLIGENT-EXPENSE-TRACKER/data/external/new_anomalies.csv")
 new_email_path = Path("/home/sehar/INTELLIGENT-EXPENSE-TRACKER/data/interim/new_email_transaction_data.csv")
 
-def main():
+def process_transactions():
     # 1.  Load historical features
     raw_transcation = pd.read_csv(raw_path)
     print("raw data loaded")
@@ -129,12 +159,15 @@ def main():
     # 3️⃣ Append new transactions to historical raw data
      # 3️⃣ Keep only new rows (source=='new') from email alerts
     df_new_only = df_new[df_new['source'] == 'new'].copy()
+    print(df_new['source'].unique())  # what values are there?
+    print(len(df_new_only))           # how many rows were actually selected?
+
     raw_transcation['source'] = 'historical'
     combined_raw = pd.concat([raw_transcation, df_new_only]).reset_index(drop=True)
 
     # combined_raw = pd.concat([raw_transcation, df_new]).reset_index(drop=True)
     combined_raw = combined_raw.drop_duplicates(subset=["date", "merchant_clean", "amount"], keep="last")
-    print(combined_raw.head())
+    print(combined_raw.tail(5))
 
     combined_raw.to_csv(raw_path, index=False)
     # Sort by date ascending (oldest first)
@@ -142,45 +175,43 @@ def main():
 
     # # # 4️⃣ Run feature engineering on full dataset
     combined_features = create_features(combined_raw)
+    print(combined_features.tail(5))
     # # combined_features.to_csv(feature_path, index=False)
 
     # # # After anomaly detection and saving
     # # combined_features.loc[combined_features['source'] == 'new', 'source'] = 'historical'
 
     # # #5️⃣ Detect anomalies on full feature dataset
-    anamoly_dataset = detect_anomalies(combined_features)
+    combined_features = detect_anomalies(combined_features)
     # #storing historic anamolies
-    anamoly_dataset.to_csv(feature_path, index=False)
+    # anamoly_dataset.to_csv(feature_path, index=False)
 
-    anomalies_new = (combined_features['any_anomaly'].astype(bool)) | (combined_features['source'] == 'new')
+    anomalies_new = combined_features[
+    (combined_features['any_anomaly']) & (combined_features['source'] == 'new')
+]
+    combined_features.to_csv(feature_path, index=False)
+    logging.info(f"✅ Updated features dataset saved with {len(combined_features)} rows.")
 
     print(f"Detected {len(anomalies_new)} anomalies in new transactions.")
 
-    # # Step 2: Append new anomalies to existing anomalies CSV
-    if new_anomalies_path.exists() and os.path.getsize(new_anomalies_path) > 0:
-        try:
-            existing_anomalies = pd.read_csv(new_anomalies_path)
-        except pd.errors.EmptyDataError:
-            existing_anomalies = pd.DataFrame(columns=anomalies_new.columns)
-    else:
-        existing_anomalies = pd.DataFrame(columns=anomalies_new.columns)
+    # # # Step 2: Append new anomalies to existing anomalies CSV
+    # if new_anomalies_path.exists() and os.path.getsize(new_anomalies_path) > 0:
+    #     try:
+    #         existing_anomalies = pd.read_csv(new_anomalies_path)
+    #     except pd.errors.EmptyDataError:
+    #         existing_anomalies = pd.DataFrame(columns=anomalies_new.columns)
+    # else:
+    #     existing_anomalies = pd.DataFrame(columns=anomalies_new.columns)
 
-    # # Combine and remove duplicates
-    combined_anomalies = pd.concat([existing_anomalies, anomalies_new], ignore_index=True)
-    combined_anomalies = combined_anomalies.drop_duplicates(
-        subset=['date', 'merchant_clean', 'amount', 'category'], keep='last'
-    )
+    # # # Combine and remove duplicates
+    # combined_anomalies = pd.concat([existing_anomalies, anomalies_new], ignore_index=True)
+    # combined_anomalies = combined_anomalies.drop_duplicates(
+    #     subset=['date', 'merchant_clean', 'amount', 'category'], keep='last'
+    # )
 
     # # Save updated anomalies dataset
     # combined_anomalies.to_csv(new_anomalies_path, index=False)
-    logging.info(f"✅ Updated anomalies dataset saved with {len(combined_anomalies)} rows.")
-
-    # # Step 3: Update 'source' for new transactions to historical
-    # combined_features.loc[combined_features['source'] == 'new', 'source'] = 'historical'
-
-    # # Step 4: Save updated features dataset
-    combined_features.to_csv(feature_path, index=False)
-    logging.info(f"✅ Updated features dataset saved with {len(combined_features)} rows.")
+    # logging.info(f"✅ Updated anomalies dataset saved with {len(combined_anomalies)} rows.")
 
     print("Anomalies processing complete.")
 
@@ -206,7 +237,8 @@ def main():
 
     # Convert results to DataFrame for easy comparison
     results_df = pd.DataFrame(results)
+    visualize_anomalies(df)
     # print(results_df.sort_values(by='F1', ascending=False))
 
 if __name__ == "__main__":
-    main()
+    process_transactions()

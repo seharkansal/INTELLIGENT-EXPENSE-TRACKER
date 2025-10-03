@@ -9,7 +9,6 @@ from langchain.prompts import PromptTemplate
 from langchain.output_parsers import PydanticOutputParser
 from langchain.schema.runnable import RunnablePassthrough
 from langchain.document_loaders import JSONLoader
-from dotenv import load_dotenv
 
 load_dotenv()
 # primary_df = pd.read_csv("/home/sehar/INTELLIGENT-EXPENSE-TRACKER/data/external/new_transactions_features.csv")

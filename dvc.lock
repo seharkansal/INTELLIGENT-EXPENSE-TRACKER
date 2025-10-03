@@ -5,29 +5,29 @@ stages:
     deps:
     - path: src/data/data_injestion.py
       hash: md5
-      md5: 7c5a0fcf73bcbd431ace46c3a9d4394b
-      size: 3324
+      md5: fa0a3d141a2b401faf1d6d5ab46a75a7
+      size: 3269
     outs:
     - path: data/raw
       hash: md5
-      md5: 2d3cc6375e5d359da285d0572f0b26cd.dir
-      size: 26896
-      nfiles: 2
+      md5: 41c2ba73f84cf98173bf9a084ad8b973.dir
+      size: 26875
+      nfiles: 1
   data_preprocessing:
     cmd: ./venv/bin/python -m src.data.data_preprocessing
     deps:
     - path: data/raw
       hash: md5
-      md5: 2d3cc6375e5d359da285d0572f0b26cd.dir
-      size: 26896
-      nfiles: 2
+      md5: 41c2ba73f84cf98173bf9a084ad8b973.dir
+      size: 26875
+      nfiles: 1
     - path: src/data/data_preprocessing.py
       hash: md5
-      md5: 5312bcd050145ddabe0825ae06d8ae95
-      size: 3862
+      md5: fd90c67f257f1f1972f65fef52ec55ee
+      size: 4018
     outs:
     - path: data/interim
       hash: md5
-      md5: 5c3bc458f9eb05c0a31fa1f6cc22f108.dir
-      size: 30552
-      nfiles: 2
+      md5: b240600f1686e0f88be23e19b0e2d326.dir
+      size: 25237
+      nfiles: 1

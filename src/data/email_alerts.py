@@ -62,41 +62,43 @@ def fetch_new_transactions():
     logging.info(f"Fetched {len(df_new)} new transactions from emails.")
     return df_new
 
-df_new = fetch_new_transactions()
+def save_new_emails():
 
-if df_new.empty:
-    logging.info("No new transactions found.")
-else:
-    df_processed = preprocess_dataframe(df_new)
-    df_processed["source"] = "new"  # mark new emails
+    df_new = fetch_new_transactions()
 
-    master_csv = "/home/sehar/INTELLIGENT-EXPENSE-TRACKER/data/interim/new_email_transaction_data.csv"
-
-    if os.path.exists(master_csv):
-        df_master = pd.read_csv(master_csv)
-
-        # Mark all existing rows as historical
-        df_master["source"] = "historical"
-
-        # Combine old + new
-        df_combined = pd.concat([df_master, df_processed], ignore_index=True)
-
-        # Remove duplicates
-        df_combined["tx_hash"] = (
-            df_combined["date"].astype(str) +
-            df_combined["merchant_clean"].str.lower().str.strip() +
-            df_combined["amount"].astype(str)
-        ).apply(hash)
-
-        df_combined.drop_duplicates(subset=["tx_hash"], inplace=True)
-        df_combined.drop(columns=["tx_hash"], inplace=True)
-
-        df_combined.to_csv(master_csv, index=False)
-        logging.info(f"Master CSV updated with {len(df_combined['source']=='new')} unique transactions.")
+    if df_new.empty:
+        logging.info("No new transactions found.")
     else:
-        # First time, just save new rows
-        df_processed.to_csv(master_csv, index=False)
-        logging.info(f"Created new master CSV with {len(df_processed)} records.")
+        df_processed = preprocess_dataframe(df_new)
+        df_processed["source"] = "new"  # mark new emails
+
+        master_csv = "/home/sehar/INTELLIGENT-EXPENSE-TRACKER/data/interim/new_email_transaction_data.csv"
+
+        if os.path.exists(master_csv):
+            df_master = pd.read_csv(master_csv)
+
+            # Mark all existing rows as historical
+            df_master["source"] = "historical"
+
+            # Combine old + new
+            df_combined = pd.concat([df_master, df_processed], ignore_index=True)
+
+            # Remove duplicates
+            df_combined["tx_hash"] = (
+                df_combined["date"].astype(str) +
+                df_combined["merchant_clean"].str.lower().str.strip() +
+                df_combined["amount"].astype(str)
+            ).apply(hash)
+
+            df_combined.drop_duplicates(subset=["tx_hash"], inplace=True)
+            df_combined.drop(columns=["tx_hash"], inplace=True)
+
+            df_combined.to_csv(master_csv, index=False)
+            logging.info(f"Master CSV updated with {len(df_combined['source']=='new')} unique transactions.")
+        else:
+            # First time, just save new rows
+            df_processed.to_csv(master_csv, index=False)
+            logging.info(f"Created new master CSV with {len(df_processed)} records.")
 
 
 # if df_new.empty:

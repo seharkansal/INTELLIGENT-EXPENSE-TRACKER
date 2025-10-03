@@ -1,0 +1,116 @@
+[2m2025-10-02T18:01:30.905339Z[0m [[32m[1minfo     [0m] [1mStarting log server on http://[::]:8793[0m [[0m[1m[34mairflow.utils.serve_logs.core[0m][0m [36mloc[0m=[35mcore.py:50[0m
+[2m2025-10-02T18:01:30.923478Z[0m [[32m[1minfo     [0m] [1mLoaded executor: :LocalExecutor:[0m [[0m[1m[34mairflow.executors.executor_loader[0m][0m [36mloc[0m=[35mexecutor_loader.py:281[0m
+WARNING:  ASGI app factory detected. Using it, but please consider setting the --factory flag explicitly.
+INFO:     Started server process [3213057]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://:8793 (Press CTRL+C to quit)
+[2m2025-10-02T18:01:31.049440Z[0m [[32m[1minfo     [0m] [1mSetting next_dagrun for expense_tracker_pipeline to 2025-10-03 00:00:00+00:00, run_after=2025-10-03 00:00:00+00:00[0m [[0m[1m[34mairflow.models.dag[0m][0m [36mloc[0m=[35mdag.py:688[0m
+[2m2025-10-02T18:01:31.234206Z[0m [[32m[1minfo     [0m] [1mWorker starting up pid=3213063[0m [[0m[1m[34mairflow.executors.local_executor.LocalExecutor[0m][0m [36mloc[0m=[35mlocal_executor.py:65[0m
+[2m2025-10-02T18:01:31.241690Z[0m [[32m[1minfo     [0m] [1mWorker starting up pid=3213064[0m [[0m[1m[34mairflow.executors.local_executor.LocalExecutor[0m][0m [36mloc[0m=[35mlocal_executor.py:65[0m
+/home/sehar/INTELLIGENT-EXPENSE-TRACKER/venv/lib/python3.12/site-packages/airflow/sdk/execution_time/supervisor.py:476 DeprecationWarning: This process (pid=3213063) is multi-threaded, use of fork() may lead to deadlocks in the child.
+[2m2025-10-02T18:01:45.120477Z[0m [[31m[1merror    [0m] [1muhoh                          [0m [[0m[1m[34mairflow.executors.local_executor.LocalExecutor[0m][0m [36mloc[0m=[35mlocal_executor.py:100[0m
+Traceback (most recent call last):
+  File "/home/sehar/INTELLIGENT-EXPENSE-TRACKER/venv/lib/python3.12/site-packages/httpx/_transports/default.py", line 101, in map_httpcore_exceptions
+    yield
+  File "/home/sehar/INTELLIGENT-EXPENSE-TRACKER/venv/lib/python3.12/site-packages/httpx/_transports/default.py", line 250, in handle_request
+    resp = self._pool.handle_request(req)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/sehar/INTELLIGENT-EXPENSE-TRACKER/venv/lib/python3.12/site-packages/httpcore/_sync/connection_pool.py", line 256, in handle_request
+    raise exc from None
+  File "/home/sehar/INTELLIGENT-EXPENSE-TRACKER/venv/lib/python3.12/site-packages/httpcore/_sync/connection_pool.py", line 236, in handle_request
+    response = connection.handle_request(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/sehar/INTELLIGENT-EXPENSE-TRACKER/venv/lib/python3.12/site-packages/httpcore/_sync/connection.py", line 101, in handle_request
+    raise exc
+  File "/home/sehar/INTELLIGENT-EXPENSE-TRACKER/venv/lib/python3.12/site-packages/httpcore/_sync/connection.py", line 78, in handle_request
+    stream = self._connect(request)
+             ^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/sehar/INTELLIGENT-EXPENSE-TRACKER/venv/lib/python3.12/site-packages/httpcore/_sync/connection.py", line 124, in _connect
+    stream = self._network_backend.connect_tcp(**kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/sehar/INTELLIGENT-EXPENSE-TRACKER/venv/lib/python3.12/site-packages/httpcore/_backends/sync.py", line 207, in connect_tcp
+    with map_exceptions(exc_map):
+  File "/usr/lib/python3.12/contextlib.py", line 158, in __exit__
+    self.gen.throw(value)
+  File "/home/sehar/INTELLIGENT-EXPENSE-TRACKER/venv/lib/python3.12/site-packages/httpcore/_exceptions.py", line 14, in map_exceptions
+    raise to_exc(exc) from exc
+httpcore.ConnectError: [Errno 111] Connection refused
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/home/sehar/INTELLIGENT-EXPENSE-TRACKER/venv/lib/python3.12/site-packages/airflow/executors/local_executor.py", line 96, in _run_worker
+    _execute_work(log, workload)
+  File "/home/sehar/INTELLIGENT-EXPENSE-TRACKER/venv/lib/python3.12/site-packages/airflow/executors/local_executor.py", line 124, in _execute_work
+    supervise(
+  File "/home/sehar/INTELLIGENT-EXPENSE-TRACKER/venv/lib/python3.12/site-packages/airflow/sdk/execution_time/supervisor.py", line 1878, in supervise
+    process = ActivitySubprocess.start(
+              ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/sehar/INTELLIGENT-EXPENSE-TRACKER/venv/lib/python3.12/site-packages/airflow/sdk/execution_time/supervisor.py", line 940, in start
+    proc._on_child_started(ti=what, dag_rel_path=dag_rel_path, bundle_info=bundle_info)
+  File "/home/sehar/INTELLIGENT-EXPENSE-TRACKER/venv/lib/python3.12/site-packages/airflow/sdk/execution_time/supervisor.py", line 951, in _on_child_started
+    ti_context = self.client.task_instances.start(ti.id, self.pid, start_date)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/sehar/INTELLIGENT-EXPENSE-TRACKER/venv/lib/python3.12/site-packages/airflow/sdk/api/client.py", line 210, in start
+    resp = self.client.patch(f"task-instances/{id}/run", content=body.model_dump_json())
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/sehar/INTELLIGENT-EXPENSE-TRACKER/venv/lib/python3.12/site-packages/httpx/_client.py", line 1218, in patch
+    return self.request(
+           ^^^^^^^^^^^^^
+  File "/home/sehar/INTELLIGENT-EXPENSE-TRACKER/venv/lib/python3.12/site-packages/tenacity/__init__.py", line 338, in wrapped_f
+    return copy(f, *args, **kw)
+           ^^^^^^^^^^^^^^^^^^^^
+  File "/home/sehar/INTELLIGENT-EXPENSE-TRACKER/venv/lib/python3.12/site-packages/tenacity/__init__.py", line 477, in __call__
+    do = self.iter(retry_state=retry_state)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/sehar/INTELLIGENT-EXPENSE-TRACKER/venv/lib/python3.12/site-packages/tenacity/__init__.py", line 378, in iter
+    result = action(retry_state)
+             ^^^^^^^^^^^^^^^^^^^
+  File "/home/sehar/INTELLIGENT-EXPENSE-TRACKER/venv/lib/python3.12/site-packages/tenacity/__init__.py", line 420, in exc_check
+    raise retry_exc.reraise()
+          ^^^^^^^^^^^^^^^^^^^
+  File "/home/sehar/INTELLIGENT-EXPENSE-TRACKER/venv/lib/python3.12/site-packages/tenacity/__init__.py", line 187, in reraise
+    raise self.last_attempt.result()
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/concurrent/futures/_base.py", line 449, in result
+    return self.__get_result()
+           ^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/concurrent/futures/_base.py", line 401, in __get_result
+    raise self._exception
+  File "/home/sehar/INTELLIGENT-EXPENSE-TRACKER/venv/lib/python3.12/site-packages/tenacity/__init__.py", line 480, in __call__
+    result = fn(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^
+  File "/home/sehar/INTELLIGENT-EXPENSE-TRACKER/venv/lib/python3.12/site-packages/airflow/sdk/api/client.py", line 861, in request
+    return super().request(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/sehar/INTELLIGENT-EXPENSE-TRACKER/venv/lib/python3.12/site-packages/httpx/_client.py", line 825, in request
+    return self.send(request, auth=auth, follow_redirects=follow_redirects)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/sehar/INTELLIGENT-EXPENSE-TRACKER/venv/lib/python3.12/site-packages/httpx/_client.py", line 914, in send
+    response = self._send_handling_auth(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/sehar/INTELLIGENT-EXPENSE-TRACKER/venv/lib/python3.12/site-packages/httpx/_client.py", line 942, in _send_handling_auth
+    response = self._send_handling_redirects(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/sehar/INTELLIGENT-EXPENSE-TRACKER/venv/lib/python3.12/site-packages/httpx/_client.py", line 979, in _send_handling_redirects
+    response = self._send_single_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/sehar/INTELLIGENT-EXPENSE-TRACKER/venv/lib/python3.12/site-packages/httpx/_client.py", line 1014, in _send_single_request
+    response = transport.handle_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/sehar/INTELLIGENT-EXPENSE-TRACKER/venv/lib/python3.12/site-packages/httpx/_transports/default.py", line 249, in handle_request
+    with map_httpcore_exceptions():
+  File "/usr/lib/python3.12/contextlib.py", line 158, in __exit__
+    self.gen.throw(value)
+  File "/home/sehar/INTELLIGENT-EXPENSE-TRACKER/venv/lib/python3.12/site-packages/httpx/_transports/default.py", line 118, in map_httpcore_exceptions
+    raise mapped_exc(message) from exc
+httpx.ConnectError: [Errno 111] Connection refused
+[2m2025-10-02T18:01:45.667995Z[0m [[32m[1minfo     [0m] [1mMarking task as FAILED. dag_id=expense_tracker_pipeline, task_id=fetch_and_save_emails, run_id=scheduled__2025-10-02T00:00:00+00:00, logical_date=20251002T000000, start_date=, end_date=20251002T180145[0m [[0m[1m[34mairflow.models.taskinstance[0m][0m [36mloc[0m=[35mtaskinstance.py:1595[0m
+[2m2025-10-02T18:01:47.205684Z[0m [[32m[1minfo     [0m] [1mSetting next_dagrun for expense_tracker_pipeline to 2025-10-03 00:00:00+00:00, run_after=2025-10-03 00:00:00+00:00[0m [[0m[1m[34mairflow.models.dag[0m][0m [36mloc[0m=[35mdag.py:688[0m
+[2m2025-10-02T18:33:11.640653Z[0m [[32m[1minfo     [0m] [1mchecking for stale bundle versions locally[0m [[0m[1m[34mairflow.dag_processing.bundles.base[0m][0m [36mloc[0m=[35mbase.py:222[0m
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [3213057]
+Terminating on signal 15

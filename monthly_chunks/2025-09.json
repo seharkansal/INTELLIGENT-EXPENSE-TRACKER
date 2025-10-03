@@ -250,5 +250,26 @@
         "budget_anomaly": true,
         "other_anomaly": false,
         "any_anomaly": true
+    },
+    {
+        "date": "2025-09-29",
+        "merchant_clean": "AMAZON",
+        "amount": -5.64,
+        "category": "Shopping",
+        "source": "new",
+        "month": "2025-09",
+        "cumulative_category_spend": -35.01,
+        "monthly_spend_category": -35.01,
+        "budget": 0,
+        "budget_utilization": 35.01,
+        "monthly_total_spend": -284.99,
+        "other_ratio": 0.0,
+        "rolling_mean": -12.03,
+        "rolling_std": 10.16,
+        "z_score": 0.63,
+        "spike_anomaly": false,
+        "budget_anomaly": true,
+        "other_anomaly": false,
+        "any_anomaly": true
     }
 ]

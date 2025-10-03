@@ -1,0 +1,23 @@
+[
+    {
+        "date": "2025-10-02",
+        "merchant_clean": "AMAZON",
+        "amount": -5.64,
+        "category": "Shopping",
+        "source": "new",
+        "month": "2025-10",
+        "cumulative_category_spend": -5.64,
+        "monthly_spend_category": -5.64,
+        "budget": 0,
+        "budget_utilization": 5.64,
+        "monthly_total_spend": -5.64,
+        "other_ratio": 0.0,
+        "rolling_mean": -11.63,
+        "rolling_std": 10.41,
+        "z_score": 0.58,
+        "spike_anomaly": false,
+        "budget_anomaly": true,
+        "other_anomaly": false,
+        "any_anomaly": true
+    }
+]

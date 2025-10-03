@@ -50,15 +50,6 @@ print(final_response)
 # ----------------------------
 # CONFIG
 # ----------------------------
-CHUNK_DIR = Path("monthly_chunks")
-CHUNK_DIR.mkdir(exist_ok=True)
-VECTOR_STORE_PATH = Path("faiss_index")
-VECTOR_STORE_PATH.mkdir(exist_ok=True)
-# ----------------------------
-# 1️⃣ Load transactions CSV
-# ----------------------------
-df = pd.read_csv("/home/sehar/INTELLIGENT-EXPENSE-TRACKER/data/external/new_transactions_features.csv", parse_dates=["date"])
-
 # Load big JSON
 # with open("/home/sehar/INTELLIGENT-EXPENSE-TRACKER/data/processed/monthly_chunks.json") as f:
 #     all_transactions = json.load(f)
@@ -82,6 +73,10 @@ The month JSON does not exist yet.
 we create a new JSON file, write the transactions into it, and save it in month_chunks/.
 """
 def process_new_transactions(new_transactions):
+    CHUNK_DIR = Path("monthly_chunks")
+    CHUNK_DIR.mkdir(exist_ok=True)
+    VECTOR_STORE_PATH = Path("faiss_index")
+    VECTOR_STORE_PATH.mkdir(exist_ok=True)
     for tx_dict in new_transactions:
         month_path = CHUNK_DIR / f"{tx_dict['month']}.json"
 
@@ -112,27 +107,28 @@ def process_new_transactions(new_transactions):
     print("New transactions processed successfully.")
 
 # 2️⃣ Select new transactions
-mask = df["source"] == "new"
-new_df = df[mask]
+def update_monthly_chunks():
+    df = pd.read_csv("/home/sehar/INTELLIGENT-EXPENSE-TRACKER/data/external/new_transactions_features.csv", parse_dates=["date"])
+    mask = df["source"] == "new"
+    new_df = df[mask]
 
-if new_df.empty:
-    print("No new transactions found in the dataframe.")
-else:
-    # Convert to list of dicts
-    new_transactions = []
-    for _, tx in new_df.iterrows():
-        tx_dict = tx.to_dict()
-        if isinstance(tx_dict["date"], pd.Timestamp):
-            tx_dict["date"] = tx_dict["date"].strftime("%Y-%m-%d")  # make JSON-safe
-        tx_dict["month"] = tx_dict["date"][:7]  # works since now it's a string
-        new_transactions.append(tx_dict)
+    if new_df.empty:
+        print("No new transactions found in the dataframe.")
+    else:
+        # Convert to list of dicts
+        new_transactions = []
+        for _, tx in new_df.iterrows():
+            tx_dict = tx.to_dict()
+            if isinstance(tx_dict["date"], pd.Timestamp):
+                tx_dict["date"] = tx_dict["date"].strftime("%Y-%m-%d")  # make JSON-safe
+            tx_dict["month"] = tx_dict["date"][:7]  # works since now it's a string
+            new_transactions.append(tx_dict)
 
-    # Append to month JSONs
-    process_new_transactions(new_transactions)
-    # 5️⃣ Mark these rows as historical in the dataframe
-    df.loc[mask, "source"] = "historical"
+        # Append to month JSONs
+        process_new_transactions(new_transactions)
+        # 5️⃣ Mark these rows as historical in the dataframe
+        df.loc[mask, "source"] = "historical"
 
-    # 6️⃣ Save back to the CSV
-    df.to_csv("/home/sehar/INTELLIGENT-EXPENSE-TRACKER/data/external/new_transactions_features.csv", index=False)
-    print(f"Marked {mask.sum()} transactions as historical in CSV.")
-
+        # 6️⃣ Save back to the CSV
+        df.to_csv("/home/sehar/INTELLIGENT-EXPENSE-TRACKER/data/external/new_transactions_features.csv", index=False)
+        print(f"Marked {mask.sum()} transactions as historical in CSV.")
